@@ -796,6 +796,13 @@ label:has(>input[type="checkbox"]),label:has(input[type="checkbox"]){display:inl
  let managerType='calendar';
  function openManagerModal(type){managerType=type;const isCal=type==='calendar';$('lwManagerTitle').textContent=isCal?'New calendar':'New tag';$('lwManagerHint').textContent=isCal?'Create a calendar for a part of your life.':'Create a colour label for your events.';$('lwManagerName').value='';$('lwManagerIcon').value='';$('lwManagerColor').value=isCal?'#a991d0':'#d99fbd';$('lwManagerCreate').textContent=isCal?'Create calendar':'Create tag';backdrop.classList.add('show');setTimeout(()=>$('lwManagerName').focus(),20)}
  function closeManagerModal(){backdrop.classList.remove('show')}
+ // Delegation survives renderSidebar replacing the manager buttons.
+ document.addEventListener('click', function(ev) {
+   const calBtn = ev.target.closest('#lwAddCalendar');
+   const tagBtn = ev.target.closest('#lwAddTag');
+   if (calBtn) { ev.preventDefault(); ev.stopImmediatePropagation(); openManagerModal('calendar'); }
+   else if (tagBtn) { ev.preventDefault(); ev.stopImmediatePropagation(); openManagerModal('tag'); }
+ }, true);
  $('lwManagerCancel').onclick=closeManagerModal;backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeManagerModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeManagerModal()});
  $('lwManagerCreate').onclick=()=>{const name=$('lwManagerName').value.trim();if(!name){toast('Give it a name first');$('lwManagerName').focus();return}const id=(managerType==='calendar'?'cal-':'tag-')+Date.now()+'-'+Math.random().toString(36).slice(2,7),icon=$('lwManagerIcon').value.trim(),color=$('lwManagerColor').value;if(managerType==='calendar')calendars.push({id,name,icon,color,visible:true});else tags.push({id,name,icon,color});saveExtra();closeManagerModal();renderAll();toast(managerType==='calendar'?'Calendar created ✨':'Tag created ✨')};
  // Compact manager rows: readable name first, visibility switch after the text.
@@ -832,6 +839,140 @@ label:has(>input[type="checkbox"]),label:has(input[type="checkbox"]){display:inl
  // Render event/task text first and place the completion toggle after the label.
  const taskRender=renderTaskList;renderTaskList=function(){taskRender();$('taskList')?.querySelectorAll('.lw-task-row').forEach(row=>{const check=row.querySelector('input[type=checkbox]'),label=row.querySelector('span:not(.task-tag):not(.lw-task-date)');if(check&&label){row.insertBefore(label,check);row.insertBefore(check,label.nextSibling)}})};
  renderManagers();renderAll();
+})();
+</script>
+
+
+<style id="little-week-allday-v31">
+/* Microsoft-style all-day lane: a separate row between date headings and timed slots. */
+.week-grid .all-day-label,
+.week-grid .all-day-cell { min-height:48px; height:auto; box-sizing:border-box; }
+.week-grid .all-day-cell { display:flex; flex-direction:column; align-items:stretch; gap:4px; padding:4px; }
+.week-grid .all-day-chip { display:block; width:100%; min-width:0; box-sizing:border-box; border:0; border-left:4px solid transparent; border-radius:6px; padding:5px 7px; text-align:left; font:600 11px/1.25 inherit; color:#302b32; cursor:pointer; overflow-wrap:anywhere; }
+.week-grid .all-day-chip:hover { filter:brightness(.97); }
+</style>
+<script id="little-week-allday-v31">
+(() => {
+  // Preserve the checkbox value after all existing save wrappers have run.
+  const lwSaveWithAllDay = saveEvent;
+  saveEvent = function() {
+    const editing = editingId;
+    const allDay = !!$('lwAllDay')?.checked;
+    lwSaveWithAllDay();
+    const saved = editing !== null ? events.find(e => e.id === editing) : events[events.length - 1];
+    if (saved) {
+      saved.allDay = allDay;
+      if (allDay) { saved.time = '00:00'; saved.duration = 24; }
+      persist();
+      renderAll();
+    }
+  };
+
+  // Rebuild the dedicated all-day lane after every render, using saved event data.
+  const lwRenderWithAllDay = renderCalendar;
+  renderCalendar = function() {
+    lwRenderWithAllDay();
+    const root = $('calendarView');
+    const grid = root?.querySelector('.week-grid');
+    if (!grid) return; // Month/year/agenda use their own all-day presentation.
+
+    const cells = [...grid.querySelectorAll('.all-day-cell')];
+    if (!cells.length) return;
+    cells.forEach(cell => {
+      cell.replaceChildren();
+      const key = cell.dataset.lwAllday;
+      if (!key) return;
+      const items = visibleEvents().filter(e => e.date === key && e.allDay === true);
+      items.forEach(e => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'all-day-chip';
+        chip.textContent = `${e.icon ? e.icon + ' ' : ''}${e.title}`;
+        const tag = tags.find(t => t.id === e.tagId);
+        const colour = tag?.color || '#d9c9ed';
+        chip.style.background = colour;
+        chip.style.borderLeftColor = lwPriorityColour(e.priority);
+        chip.title = `${e.title} · All day`;
+        chip.addEventListener('click', () => openEvent(e));
+        cell.appendChild(chip);
+      });
+    });
+  };
+
+  // Keep all-day items out of the hourly columns even if an old record has a duration.
+  const lwVisibleWithoutTimedAllDay = visibleEvents;
+  visibleEvents = function() {
+    return lwVisibleWithoutTimedAllDay().filter(e => !!e.date);
+  };
+
+  renderAll();
+
+  // Give rendered timed events stable IDs so simultaneous events can be laid out side-by-side.
+  const previousEventEl = eventEl;
+  eventEl = function(e, top, height) {
+    const node = previousEventEl(e, top, height);
+    node.dataset.lwEventId = String(e.id);
+    return node;
+  };
+  const previousRenderForOverlap = renderCalendar;
+  renderCalendar = function() {
+    previousRenderForOverlap();
+    const root = $('calendarView');
+    const grid = root?.querySelector('.week-grid');
+    if (!grid) return;
+
+    const cells = [...grid.querySelectorAll('.day-column')];
+    const dayKeys = [...new Set(cells.map(c => c.dataset.date).filter(Boolean))];
+    const toMinutes = e => { const [h,m] = String(e.time || '00:00').split(':').map(Number); return h*60+m; };
+    const hexToRgba = (hex, alpha) => {
+      const raw = String(hex || '#d9c9ed').replace('#','');
+      const full = raw.length===3 ? raw.split('').map(c=>c+c).join('') : raw;
+      const n = parseInt(full,16);
+      if (!Number.isFinite(n)) return `rgba(217,201,237,${alpha})`;
+      return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${alpha})`;
+    };
+
+    // Shade the complete date column lightly when it contains an all-day event.
+    dayKeys.forEach(key => {
+      const allDay = visibleEvents().filter(e => e.date===key && e.allDay===true);
+      const tag = allDay.length ? tags.find(t => t.id===allDay[0].tagId) : null;
+      const shade = tag ? hexToRgba(tag.color, .15) : '';
+      grid.querySelectorAll(`.day-column[data-date="${key}"]`).forEach(col => {
+        col.style.backgroundColor = shade || '';
+      });
+      const allDayCell = grid.querySelector(`.all-day-cell[data-lw-allday="${key}"]`);
+      if (allDayCell && shade) allDayCell.style.backgroundColor = shade;
+    });
+
+    // Greedy interval partitioning: overlapping appointments receive distinct lanes.
+    dayKeys.forEach(key => {
+      const dayEvents = visibleEvents().filter(e => e.date===key && !e.allDay && e.time)
+        .map(e => ({e, start:toMinutes(e), end:toMinutes(e)+Math.max(15,Number(e.duration)||30)}))
+        .sort((a,b)=>a.start-b.start || b.end-a.end);
+      const lanesEnd=[];
+      dayEvents.forEach(item => {
+        let lane=lanesEnd.findIndex(end => end<=item.start);
+        if (lane<0) lane=lanesEnd.length;
+        lanesEnd[lane]=item.end;
+        item.lane=lane;
+      });
+      // Events linked by any overlap share the width of their connected cluster.
+      const seen=new Set();
+      dayEvents.forEach((item,i) => {
+        if (seen.has(item)) return;
+        const cluster=[],stack=[item]; seen.add(item);
+        while(stack.length){const cur=stack.pop();cluster.push(cur);dayEvents.forEach(other=>{
+          if(!seen.has(other) && cur.start<other.end && other.start<cur.end){seen.add(other);stack.push(other)}
+        })}
+        const laneCount=Math.max(1,...cluster.map(x=>x.lane+1));
+        cluster.forEach(x=>{
+          const node=grid.querySelector(`[data-lw-event-id="${String(x.e.id).replace(/"/g,'')} "]`) || [...grid.querySelectorAll('[data-lw-event-id]')].find(n=>n.dataset.lwEventId===String(x.e.id));
+          if(node){node.style.left=`calc(${x.lane/laneCount*100}% + 3px)`;node.style.width=`calc(${100/laneCount}% - 6px)`;node.style.right='auto';node.style.zIndex=String(3+x.lane)}
+        });
+      });
+    });
+  };
+  renderAll();
 })();
 </script>
 
