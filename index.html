@@ -735,5 +735,105 @@ label:has(>input[type="checkbox"]),label:has(input[type="checkbox"]){display:inl
 })();
 </script>
 
+
+<style id="little-week-v30-style">
+/* v30 — cleaner, user-owned calendars and tags */
+#calendarList,.sidebar>.section-label:has(+ #calendarList),#categoryThemeControls,.studio-section:has(#categoryThemeControls){display:none!important}
+#lwCalendarManager{margin-top:18px;padding-top:4px}
+#lwCalendarManager>.section-label{margin:14px 4px 8px}
+#lwCalendarRows,#lwTagRows{display:grid;gap:5px;padding:0 2px}
+.lw-manage-row{display:flex;align-items:center;gap:7px;min-width:0;padding:5px 4px;border-radius:9px;background:transparent}
+.lw-manage-row .lw-manager-name{min-width:0;flex:1;font-size:12px;color:var(--ink);overflow-wrap:anywhere}
+.lw-manage-row .lw-manager-icon{width:22px;text-align:center;font-size:15px;flex:none}
+.lw-manage-row input[type=color]{width:31px;height:27px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--panel);flex:none}
+.lw-manage-row .lw-inline-add{padding:4px 8px;min-width:27px}
+.lw-switch{appearance:none!important;-webkit-appearance:none!important;width:31px!important;height:18px!important;min-width:31px!important;border:0!important;border-radius:20px!important;background:#c9c2cc!important;position:relative;cursor:pointer;margin:0!important;flex:none!important}
+.lw-switch:after{content:"";position:absolute;width:14px;height:14px;top:2px;left:2px;border-radius:50%;background:white;transition:transform .16s}
+.lw-switch:checked{background:var(--accent)!important}
+.lw-switch:checked:after{transform:translateX(13px)}
+.lw-create-actions{display:flex;gap:7px;margin:7px 2px 12px}
+.lw-create-actions .lw-inline-add{flex:1;text-align:left;padding:8px 10px}
+.lw-modal-field{display:grid;gap:5px;margin:11px 0;font-size:11px;color:var(--muted);font-weight:650;letter-spacing:.35px;text-transform:uppercase}
+.lw-modal-field input[type=text]{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font-size:14px;text-transform:none;letter-spacing:normal;font-weight:400}
+.lw-modal-field input[type=color]{width:58px;height:38px;border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:3px}
+.lw-icon-color-row{display:flex;align-items:center;gap:12px}
+.lw-icon-color-row input[type=text]{max-width:120px}
+.lw-task-row,.lw-task-row>*{min-width:0}
+.lw-task-row{gap:8px;padding:7px 1px;min-height:36px}
+.lw-task-row>span:first-of-type{order:0;flex:1;line-height:1.35}
+.lw-task-row input[type=checkbox]{order:2;margin:0 3px 0 0!important}
+.lw-task-row .task-tag{order:1;margin-left:0}
+.lw-task-row .lw-task-date{order:1;margin-left:0}
+.lw-task-row button{order:3}
+#lwListTools{margin:7px 0 3px}
+#lwListTools .lw-task-tools{display:flex;gap:6px;flex-wrap:wrap}
+#lwListTools input,#lwListTools select{min-width:0;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font-size:11px}
+#lwCalendarManager .section-label{font-size:10px}
+.lw-empty-note{font-size:11px;color:var(--muted);padding:3px 4px}
+@media(max-width:700px){.lw-manage-row{gap:5px}.lw-manage-row .lw-manager-name{font-size:11px}}
+</style>
+<script>
+// v30: rebuild category management around user-created calendars and tags.
+(()=>{
+ const $=id=>document.getElementById(id);
+ // The old category system is retired. Preserve the new calendar/tag data only.
+ categories.splice(0,categories.length);
+ try{const th=JSON.parse(localStorage.getItem('littleWeekTheme')||'{}');th.categories=[];localStorage.setItem('littleWeekTheme',JSON.stringify(th))}catch(e){}
+ $('calendarList')?.replaceChildren();
+ const oldCatHeading=[...document.querySelectorAll('.sidebar>.section-label')].find(x=>x.textContent.trim().toLowerCase()==='my calendars');if(oldCatHeading)oldCatHeading.remove();
+ const oldCategorySection=$('categoryThemeControls')?.closest('.studio-section');if(oldCategorySection)oldCategorySection.remove();
+ // Replace inline create forms with one consistent modal, like New event.
+ const manager=$('lwCalendarManager');
+ if(manager){
+   $('lwNewCalendarForm')?.remove();$('lwNewTagManagerForm')?.remove();
+   let actions=manager.querySelector('.lw-create-actions');
+   if(!actions){actions=document.createElement('div');actions.className='lw-create-actions';const cal=$('lwAddCalendar'),tag=$('lwAddTag');if(cal){cal.remove();actions.appendChild(cal)}if(tag){tag.remove();actions.appendChild(tag)}manager.appendChild(actions)}
+   if($('lwAddCalendar'))$('lwAddCalendar').onclick=()=>openManagerModal('calendar');
+   if($('lwAddTag'))$('lwAddTag').onclick=()=>openManagerModal('tag');
+ }
+ const backdrop=document.createElement('div');backdrop.id='lwManagerModal';backdrop.className='modal-backdrop';backdrop.innerHTML=`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="lwManagerTitle"><h3 id="lwManagerTitle" style="margin:0 0 5px;font: bold 21px var(--site-font-heading);color:var(--ink)">New calendar</h3><p id="lwManagerHint" style="margin:0 0 14px;color:var(--muted);font-size:12px">Make a space that's yours.</p><label class="lw-modal-field">Name<input id="lwManagerName" type="text" maxlength="40" placeholder="e.g. school"></label><div class="lw-icon-color-row"><label class="lw-modal-field" style="flex:1">Custom icon<input id="lwManagerIcon" type="text" maxlength="8" placeholder="✦"></label><label class="lw-modal-field">Colour<input id="lwManagerColor" type="color" value="#a991d0"></label></div><div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn" id="lwManagerCancel">Cancel</button><button type="button" class="btn primary" id="lwManagerCreate">Create</button></div></div>`;
+ document.body.appendChild(backdrop);
+ let managerType='calendar';
+ function openManagerModal(type){managerType=type;const isCal=type==='calendar';$('lwManagerTitle').textContent=isCal?'New calendar':'New tag';$('lwManagerHint').textContent=isCal?'Create a calendar for a part of your life.':'Create a colour label for your events.';$('lwManagerName').value='';$('lwManagerIcon').value='';$('lwManagerColor').value=isCal?'#a991d0':'#d99fbd';$('lwManagerCreate').textContent=isCal?'Create calendar':'Create tag';backdrop.classList.add('show');setTimeout(()=>$('lwManagerName').focus(),20)}
+ function closeManagerModal(){backdrop.classList.remove('show')}
+ $('lwManagerCancel').onclick=closeManagerModal;backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeManagerModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeManagerModal()});
+ $('lwManagerCreate').onclick=()=>{const name=$('lwManagerName').value.trim();if(!name){toast('Give it a name first');$('lwManagerName').focus();return}const id=(managerType==='calendar'?'cal-':'tag-')+Date.now()+'-'+Math.random().toString(36).slice(2,7),icon=$('lwManagerIcon').value.trim(),color=$('lwManagerColor').value;if(managerType==='calendar')calendars.push({id,name,icon,color,visible:true});else tags.push({id,name,icon,color});saveExtra();closeManagerModal();renderAll();toast(managerType==='calendar'?'Calendar created ✨':'Tag created ✨')};
+ // Compact manager rows: readable name first, visibility switch after the text.
+ const oldRenderManagers=renderManagers;
+ renderManagers=function(){
+   oldRenderManagers();
+   if($('lwCalendarRows')){$('lwCalendarRows').innerHTML=calendars.map(c=>`<div class="lw-manage-row"><span class="lw-manager-icon">${escapeHtml(c.icon||'▦')}</span><span class="lw-manager-name">${escapeHtml(c.name)}</span><input class="lw-switch" type="checkbox" role="switch" aria-label="Show ${escapeHtml(c.name)}" data-v30-cal-visible="${escapeHtml(c.id)}" ${c.visible!==false?'checked':''}><input type="color" aria-label="${escapeHtml(c.name)} colour" data-v30-cal-color="${escapeHtml(c.id)}" value="${c.color||'#a991d0'}"><button class="lw-inline-add" type="button" aria-label="Delete ${escapeHtml(c.name)}" data-v30-cal-delete="${escapeHtml(c.id)}">×</button></div>`).join('')||'<div class="lw-empty-note">No calendars yet.</div>';
+    $('lwCalendarRows').querySelectorAll('[data-v30-cal-visible]').forEach(i=>i.onchange=()=>{const c=calendars.find(x=>x.id===i.dataset.v30CalVisible);if(c){c.visible=i.checked;saveExtra();renderCalendar()}});
+    $('lwCalendarRows').querySelectorAll('[data-v30-cal-color]').forEach(i=>i.oninput=()=>{const c=calendars.find(x=>x.id===i.dataset.v30CalColor);if(c){c.color=i.value;saveExtra()}});
+    $('lwCalendarRows').querySelectorAll('[data-v30-cal-delete]').forEach(i=>i.onclick=()=>{const c=calendars.find(x=>x.id===i.dataset.v30CalDelete);if(!c)return;if(!confirm(`Delete “${c.name}” and its events?`))return;calendars=calendars.filter(x=>x.id!==c.id);events=events.filter(e=>e.calendarId!==c.id);saveExtra();renderAll()});
+   }
+   if($('lwTagRows')){$('lwTagRows').innerHTML=tags.map(t=>`<div class="lw-manage-row"><span class="lw-manager-icon">${escapeHtml(t.icon||'•')}</span><span class="lw-manager-name">${escapeHtml(t.name)}</span><input type="color" aria-label="${escapeHtml(t.name)} colour" data-v30-tag-color="${escapeHtml(t.id)}" value="${t.color||'#d99fbd'}"><button class="lw-inline-add" type="button" aria-label="Delete ${escapeHtml(t.name)}" data-v30-tag-delete="${escapeHtml(t.id)}">×</button></div>`).join('')||'<div class="lw-empty-note">No tags yet.</div>';
+    $('lwTagRows').querySelectorAll('[data-v30-tag-color]').forEach(i=>i.oninput=()=>{const t=tags.find(x=>x.id===i.dataset.v30TagColor);if(t){t.color=i.value;saveExtra();renderCalendar()}});
+    $('lwTagRows').querySelectorAll('[data-v30-tag-delete]').forEach(i=>i.onclick=()=>{const t=tags.find(x=>x.id===i.dataset.v30TagDelete);if(!t)return;if(!confirm(`Delete tag “${t.name}”?`))return;tags=tags.filter(x=>x.id!==t.id);events.forEach(e=>{if(e.tagId===t.id)e.tagId=''});tasks.forEach(x=>{if(x.tagId===t.id)x.tagId=''});saveExtra();renderAll()});
+   }
+ };
+ // Keep custom icons and calendar/tag colours available in the event editor.
+ const oldEnsureCalendar=()=>{};
+ if($('lwEventCalendar')){$('lwEventCalendar').innerHTML='<option value="">No calendar</option>'+calendars.map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.icon||'▦')} ${escapeHtml(c.name)}</option>`).join('')}
+ if($('lwEventTag'))$('lwEventTag').innerHTML='<option value="">No tag</option>'+tags.map(t=>`<option value="${escapeHtml(t.id)}">${escapeHtml(t.icon||'•')} ${escapeHtml(t.name)}</option>`).join('');
+ const oldOpenEvent=openEvent;openEvent=function(ev=null,date,time){oldOpenEvent(ev,date,time);if($('lwEventCalendar'))$('lwEventCalendar').innerHTML='<option value="">No calendar</option>'+calendars.map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.icon||'▦')} ${escapeHtml(c.name)}</option>`).join('');if($('lwEventTag'))$('lwEventTag').innerHTML='<option value="">No tag</option>'+tags.map(t=>`<option value="${escapeHtml(t.id)}">${escapeHtml(t.icon||'•')} ${escapeHtml(t.name)}</option>`).join('');$('lwEventCalendar').value=ev?.calendarId||'';$('lwEventTag').value=ev?.tagId||'';$('lwEventIcon').value=ev?.icon||''};
+ // The all-day strip must be populated from the event's allDay flag in every calendar view.
+ const previousRender=renderCalendar;
+ renderCalendar=function(){previousRender();const root=$('calendarView');if(!root)return;
+   if(['week','workweek','2day','3day','4day','6day'].includes(currentView)){
+     root.querySelectorAll('.all-day-cell[data-lw-allday]').forEach(cell=>{cell.replaceChildren();const key=cell.dataset.lwAllday;visibleEvents().filter(e=>e.date===key&&e.allDay).forEach(e=>{const chip=document.createElement('button');chip.type='button';chip.className='month-event';chip.textContent=(e.icon?e.icon+' ':'')+e.title;const tag=tags.find(t=>t.id===e.tagId);chip.style.background=tag?.color||'var(--panel)';chip.style.color='#302b32';chip.style.borderLeft=`4px solid ${lwPriorityColour(e.priority)}`;chip.style.cursor='pointer';chip.onclick=()=>openEvent(events.find(x=>x.id===e.id)||e);cell.appendChild(chip)})});
+   }
+   if(currentView==='day'){
+     const view=root.querySelector('.day-view');if(view){let bar=view.querySelector('.lw-day-all-day');if(!bar){bar=document.createElement('div');bar.className='lw-day-all-day';view.prepend(bar)}bar.innerHTML='<strong>all day</strong>';visibleEvents().filter(e=>e.date===dateKey(selectedDate)&&e.allDay).forEach(e=>{const chip=document.createElement('button');chip.type='button';chip.className='month-event';chip.textContent=(e.icon?e.icon+' ':'')+e.title;const tag=tags.find(t=>t.id===e.tagId);chip.style.background=tag?.color||'var(--panel)';chip.style.color='#302b32';chip.style.borderLeft=`4px solid ${lwPriorityColour(e.priority)}`;chip.onclick=()=>openEvent(events.find(x=>x.id===e.id)||e);bar.appendChild(chip)})}
+   }
+ };
+ // All-day events must never leak into the timed grid, including in day/week views.
+ const oldVisible=visibleEvents;visibleEvents=function(){return oldVisible().filter(e=>e.date&&(!e.allDay||e.allDay===true))};
+ // Render event/task text first and place the completion toggle after the label.
+ const taskRender=renderTaskList;renderTaskList=function(){taskRender();$('taskList')?.querySelectorAll('.lw-task-row').forEach(row=>{const check=row.querySelector('input[type=checkbox]'),label=row.querySelector('span:not(.task-tag):not(.lw-task-date)');if(check&&label){row.insertBefore(label,check);row.insertBefore(check,label.nextSibling)}})};
+ renderManagers();renderAll();
+})();
+</script>
+
 </body>
 </html>
