@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>little week — planner</title>
+<title>little week — your life, simplified</title>
 <style>
 :root {
   --site-primary: #b9a6d8;
@@ -191,7 +191,7 @@ h2 { font: bold calc(29px * var(--site-heading-scale)) var(--site-font-heading);
 <body>
 <div id="app">
   <header class="topbar">
-    <div class="brand"><div class="brandmark">✿</div><div><h1>little week</h1><small>your life, in lovely colour</small></div></div>
+    <div class="brand"><div class="brandmark">✿</div><div><h1>little week</h1><small>your life, simplified</small></div></div>
     <div class="top-actions">
       <button class="btn hide-mobile" id="todayBtn">Today</button>
       <button class="btn" id="settingsBtn">✧ Theme studio</button>
@@ -255,7 +255,7 @@ h2 { font: bold calc(29px * var(--site-heading-scale)) var(--site-font-heading);
   </div>
   <div class="studio-section"><h4>Your wording</h4>
     <div class="field"><label>CALENDAR NAME</label><input id="brandText" value="little week"></div>
-    <div class="field"><label>TAGLINE</label><input id="taglineText" value="your life, in lovely colour"></div>
+    <div class="field"><label>TAGLINE</label><input id="taglineText" value="your life, simplified"></div>
     <div class="field"><label>MAIN HEADING</label><input id="greetingText" value="A week with room to breathe."></div>
     <div class="field"><label>WELCOME SUBTITLE</label><input id="subtitleText" value="Make plans, leave space, make it yours."></div>
     <div class="field"><label>SIDEBAR QUOTE</label><input id="quoteText" value="A little progress each day adds up to lovely things."></div>
@@ -421,7 +421,7 @@ function applySpectrum(){const hex=$('spectrumColor').value; $('accentPicker').v
 let currentMode='light';
 function setMode(mode){const r=document.documentElement.style,keys=['--site-background','--site-primary','--site-secondary','--site-on-primary','--site-on-secondary','--site-on-background','--ink','--muted','--line','--panel','--panel-soft','--accent'];if(mode==='dark'&&currentMode!=='dark'){const s=getComputedStyle(document.documentElement);localStorage.setItem('littleWeekLightVars',JSON.stringify(Object.fromEntries(keys.map(k=>[k,s.getPropertyValue(k).trim()]))))}currentMode=mode;if(mode==='dark'){const dark={ '--site-background':'#211f27','--site-primary':'#b39ad8','--site-secondary':'#51445d','--site-on-primary':'#211b29','--site-on-secondary':'#f0eaf5','--site-on-background':'#f0eaf5','--ink':'#f0eaf5','--muted':'#b7aabd','--line':'#50485a','--panel':'#302c38','--panel-soft':'#3b3545','--accent':'#b39ad8'};Object.entries(dark).forEach(([k,v])=>r.setProperty(k,v))}else{try{const saved=JSON.parse(localStorage.getItem('littleWeekLightVars')||'{}');Object.entries(saved).forEach(([k,v])=>r.setProperty(k,v))}catch(e){}}document.documentElement.dataset.mode=mode;$('modeLabel').textContent=`Currently: ${mode} mode`;$('modeToggle').textContent=mode==='dark'?'Switch to light ☀':'Switch to dark ☾';localStorage.setItem('littleWeekMode',mode);syncThemeInputs()}
 function toggleMode(){if(currentMode==='light'){const active=document.querySelector('.theme-choice.active')?.dataset.theme||'paper';if(active!=='dark')localStorage.setItem('littleWeekLightTheme',active);setMode('dark')}else{setMode('light')}}
-const themeDefaults={brandText:'little week',taglineText:'your life, in lovely colour',greetingText:'A week with room to breathe.',subtitleText:'Make plans, leave space, make it yours.',quoteText:'A little progress each day adds up to lovely things.',tasksHeadingText:'Little things to do',notesHeadingText:'Brain dump'};
+const themeDefaults={brandText:'little week',taglineText:'your life, simplified',greetingText:'A week with room to breathe.',subtitleText:'Make plans, leave space, make it yours.',quoteText:'A little progress each day adds up to lovely things.',tasksHeadingText:'Little things to do',notesHeadingText:'Brain dump'};
 const themeInputIds=Object.keys(themeDefaults);
 function customText(id,fallback){return $(id)?.value||fallback}
 function applyCustomText(){document.querySelector('.brand h1').textContent=customText('brandText',themeDefaults.brandText);document.querySelector('.brand small').textContent=customText('taglineText',themeDefaults.taglineText);document.querySelector('.welcome p').textContent=customText('subtitleText',themeDefaults.subtitleText);document.querySelector('.sidebar-note').textContent='“'+customText('quoteText',themeDefaults.quoteText)+'”';document.querySelector('.widget-head h3').textContent=customText('tasksHeadingText',themeDefaults.tasksHeadingText);document.querySelectorAll('.widget-head h3')[1].textContent=customText('notesHeadingText',themeDefaults.notesHeadingText)}
@@ -972,6 +972,225 @@ label:has(>input[type="checkbox"]),label:has(input[type="checkbox"]){display:inl
       });
     });
   };
+  renderAll();
+})();
+</script>
+
+
+<style id="little-week-v33-style">
+/* v33: one calendar, with the navigation sidebar intentionally retained. */
+#calendarList,.sidebar>.section-label:has(+ #calendarList),
+#lwCalendarRows,#lwAddCalendar,#lwNewCalendarForm,
+#lwCalendarManager>.section-label:first-child,
+#settingsPanel .field:has(#brandText),#settingsPanel .field:has(#taglineText),
+#settingsPanel .studio-section:has(#spectrumPreview),
+#settingsPanel .lw-theme-spectrum,
+#lwEventExtras .field:has(#lwEventCalendar) { display:none !important; }
+#lwCalendarManager { margin-top:16px; }
+#lwCalendarManager>.section-label:has(+ #lwTagRows) { display:block !important; }
+#lwTagRows { display:grid; gap:5px; padding:0 2px; }
+.week-grid .all-day-label,.week-grid .all-day-cell { min-height:48px;height:auto;box-sizing:border-box; }
+.week-grid .all-day-cell { display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:4px; }
+.week-grid .all-day-chip { display:block;width:100%;min-width:0;box-sizing:border-box;border:0;border-left:5px solid transparent;border-radius:6px;padding:5px 7px;text-align:left;font:600 11px/1.25 inherit;cursor:pointer;overflow-wrap:anywhere; }
+.week-grid .all-day-chip:hover,.month-event:hover { filter:brightness(.97); }
+.week-grid .lw-all-day-add { display:block;width:100%;border:1px dashed var(--line);border-radius:6px;background:transparent;color:var(--muted);padding:4px;font-size:10px;text-align:left; }
+.lw-day-all-day { display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:43px;padding:8px 10px;margin:0 0 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel-soft);font-size:10px;color:var(--muted); }
+.lw-day-all-day strong { min-width:48px;text-transform:uppercase;letter-spacing:.6px; }
+.lw-day-all-day .month-event { margin:0;cursor:pointer;border:0;padding:5px 8px; }
+.month-day .month-event { display:block;width:100%;box-sizing:border-box;text-align:left;border:0;border-left:5px solid transparent;cursor:pointer;white-space:normal; }
+.event { border-left-width:5px!important; }
+</style>
+<script id="little-week-v33">
+(() => {
+  const $ = id => document.getElementById(id);
+
+  // One-time migration: preserve events/tasks, detach them from retired calendars,
+  // and reload so the existing calendar-management closure starts with no calendars.
+  if (!localStorage.getItem('littleWeekSingleCalendarV33')) {
+    try {
+      events.forEach(e => { delete e.calendarId; });
+      tasks.forEach(t => { delete t.calendarId; });
+      persist();
+      localStorage.setItem('littleWeekCalendarsV1', '[]');
+      localStorage.setItem('littleWeekSingleCalendarV33', '1');
+      location.reload();
+      return;
+    } catch (err) {
+      console.warn('little week v33 migration could not complete', err);
+    }
+  }
+
+  const readTags = () => {
+    try { return JSON.parse(localStorage.getItem('littleWeekTagsV1') || '[]'); }
+    catch { return []; }
+  };
+  const priorityColour = p => ({high:'#e34b5b',medium:'#ed9b35',low:'#43a66b',normal:'#ed9b35',urgent:'#e34b5b'}[String(p || 'medium').toLowerCase()] || '#ed9b35');
+  const readableText = hex => {
+    const h = String(hex || '#ddd').replace('#','');
+    if (!/^[0-9a-f]{6}$/i.test(h)) return '#302b32';
+    const n = parseInt(h,16), r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+    return (0.299*r+0.587*g+0.114*b) > 155 ? '#302b32' : '#ffffff';
+  };
+  const rgba = (hex,a) => {
+    const h=String(hex||'#d9c9ed').replace('#','');
+    if(!/^[0-9a-f]{6}$/i.test(h)) return `rgba(217,201,237,${a})`;
+    const n=parseInt(h,16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+  };
+  const tagFor = e => readTags().find(t => t.id === e.tagId);
+
+  // Fixed product identity. All other wording fields remain editable as before.
+  function forceBranding() {
+    const name=$('brandText'), tagline=$('taglineText');
+    if(name){name.value='little week';name.readOnly=true;name.disabled=true;}
+    if(tagline){tagline.value='your life, simplified';tagline.readOnly=true;tagline.disabled=true;}
+    const h=document.querySelector('.brand h1'), s=document.querySelector('.brand small');
+    if(h)h.textContent='little week';
+    if(s)s.textContent='your life, simplified';
+    document.title='little week — your life, simplified';
+  }
+  const oldApplyCustomText = applyCustomText;
+  applyCustomText = function(){ forceBranding(); oldApplyCustomText(); forceBranding(); };
+  const oldApplyThemeData = applyThemeData;
+  applyThemeData = function(data){ oldApplyThemeData(data); forceBranding(); };
+  const reset=$('resetTheme');
+  if(reset){const oldReset=reset.onclick;reset.onclick=function(e){if(oldReset)oldReset.call(this,e);forceBranding();applyCustomText();saveTheme();};}
+  forceBranding();
+  applyCustomText();
+  saveTheme();
+
+  // Remove calendar management only. Keep the mini-month and Day/Week/Workweek/Month navigation.
+  $('calendarList')?.remove();
+  document.querySelectorAll('.sidebar>.section-label').forEach(el=>{
+    if(el.textContent.trim().toLowerCase()==='my calendars')el.remove();
+  });
+  $('lwCalendarRows')?.remove();
+  $('lwAddCalendar')?.remove();
+  $('lwNewCalendarForm')?.remove();
+  const manager=$('lwCalendarManager');
+  if(manager){
+    [...manager.children].forEach(el=>{
+      const t=(el.textContent||'').trim().toLowerCase();
+      if(el.classList?.contains('section-label') && t==='your calendars')el.remove();
+    });
+  }
+  // The generic manager modal remains for the New Tag action only.
+  const managerModal=$('lwManagerModal');
+  if(managerModal){
+    const title=$('lwManagerTitle'),hint=$('lwManagerHint'),create=$('lwManagerCreate');
+    if(title)title.textContent='New tag';
+    if(hint)hint.textContent='Create a colour label for your events.';
+    if(create)create.textContent='Create tag';
+  }
+  // Keep the hidden compatibility select so legacy save handlers remain safe,
+  // but it is no longer a user-facing calendar choice.
+  if($('lwEventCalendar')){$('lwEventCalendar').innerHTML='<option value="">Main calendar</option>'; $('lwEventCalendar').value='';}
+  forceBranding();
+
+  // Remove the standalone RGB playground and the duplicate full-colour panel.
+  $('spectrumPreview')?.closest('.studio-section')?.remove();
+  document.querySelector('.lw-theme-spectrum')?.remove();
+  // Ensure the fixed identity is also used by future theme imports/resets.
+  try {
+    const theme=JSON.parse(localStorage.getItem('littleWeekTheme')||'{}');
+    theme.texts=theme.texts||{}; theme.texts.brandText='little week'; theme.texts.taglineText='your life, simplified';
+    localStorage.setItem('littleWeekTheme',JSON.stringify(theme));
+  } catch {}
+
+  // Events use the selected tag's full colour; priority remains its own left stripe.
+  const oldEventElV33=eventEl;
+  eventEl=function(e,top,height){
+    const node=oldEventElV33(e,top,height),tag=tagFor(e);
+    node.dataset.lwEventId=String(e.id);
+    node.dataset.priority=e.priority||'medium';
+    node.style.backgroundColor=tag?.color||'var(--panel-soft)';
+    node.style.color=readableText(tag?.color);
+    node.style.borderLeft=`5px solid ${priorityColour(e.priority)}`;
+    return node;
+  };
+
+  // Correct all-day rows and month chips after every calendar render.
+  const oldRenderCalendarV33=renderCalendar;
+  renderCalendar=function(){
+    oldRenderCalendarV33();
+    const root=$('calendarView'); if(!root)return;
+    const evs=visibleEvents();
+    const makeChip=(e,allDay=false)=>{
+      const tag=tagFor(e),chip=document.createElement('button');
+      chip.type='button'; chip.className=allDay?'all-day-chip':'month-event';
+      chip.textContent=`${e.icon?e.icon+' ':''}${e.title}`;
+      chip.style.backgroundColor=tag?.color||'var(--panel-soft)';
+      chip.style.color=readableText(tag?.color);
+      chip.style.borderLeft=`5px solid ${priorityColour(e.priority)}`;
+      chip.title=`${e.title}${allDay?' · All day':''}`;
+      chip.addEventListener('click',ev=>{ev.stopPropagation();const original=events.find(x=>x.id===e.id)||e;openEvent(original)});
+      return chip;
+    };
+    const makeAllDayButton=key=>{
+      const b=document.createElement('button');b.type='button';b.className='lw-all-day-add';b.textContent='＋ all-day';
+      b.onclick=()=>{openEvent(null,key,'00:00');if($('lwAllDay')){$('lwAllDay').checked=true;$('lwAllDay').dispatchEvent(new Event('change'));}};
+      return b;
+    };
+    const grid=root.querySelector('.week-grid');
+    if(grid){
+      [...grid.querySelectorAll('.all-day-cell[data-lw-allday]')].forEach(cell=>{
+        const key=cell.dataset.lwAllday,items=evs.filter(e=>e.date===key&&e.allDay===true);
+        cell.replaceChildren();
+        items.forEach(e=>cell.appendChild(makeChip(e,true)));
+        cell.appendChild(makeAllDayButton(key));
+        const tag=items.length?tagFor(items[0]):null,shade=tag?rgba(tag.color,.15):'';
+        cell.style.backgroundColor=shade||'';
+        grid.querySelectorAll(`.day-column[data-date="${key}"]`).forEach(col=>{col.style.backgroundColor=shade||'';});
+      });
+      // Robust interval partitioning: every connected overlap group gets side-by-side lanes.
+      const keys=[...new Set([...grid.querySelectorAll('.day-column[data-date]')].map(x=>x.dataset.date))];
+      keys.forEach(key=>{
+        const dayCols=[...grid.querySelectorAll(`.day-column[data-date="${key}"]`)];
+        const nodes=dayCols.flatMap(col=>[...col.querySelectorAll('.event[data-lw-event-id]')]);
+        const items=evs.filter(e=>e.date===key&&!e.allDay&&e.time).map(e=>{
+          const node=nodes.find(n=>n.dataset.lwEventId===String(e.id));
+          const [h,m]=String(e.time).split(':').map(Number);
+          return node?{e,node,start:h*60+m,end:h*60+m+Math.max(15,(Number(e.duration)||1)*60)}:null;
+        }).filter(Boolean).sort((a,b)=>a.start-b.start||b.end-a.end);
+        let i=0;
+        while(i<items.length){
+          const cluster=[items[i]];let end=items[i].end,j=i+1;
+          while(j<items.length&&items[j].start<end){cluster.push(items[j]);end=Math.max(end,items[j].end);j++;}
+          const laneEnds=[];
+          cluster.forEach(item=>{let lane=laneEnds.findIndex(x=>x<=item.start);if(lane<0)lane=laneEnds.length;laneEnds[lane]=item.end;item.lane=lane;});
+          const count=Math.max(1,laneEnds.length);
+          cluster.forEach(item=>{item.node.style.left=`calc(${item.lane/count*100}% + 3px)`;item.node.style.width=`calc(${100/count}% - 6px)`;item.node.style.right='auto';item.node.style.zIndex=String(3+item.lane);});
+          i=j;
+        }
+      });
+    }
+    // Day view has its own all-day strip above the hourly rows.
+    if(currentView==='day'){
+      const view=root.querySelector('.day-view');
+      if(view){
+        view.querySelectorAll('.lw-day-all-day').forEach(x=>x.remove());
+        const key=dateKey(selectedDate),bar=document.createElement('div');bar.className='lw-day-all-day';
+        const label=document.createElement('strong');label.textContent='all day';bar.appendChild(label);
+        evs.filter(e=>e.date===key&&e.allDay===true).forEach(e=>bar.appendChild(makeChip(e,true)));
+        bar.appendChild(makeAllDayButton(key));view.prepend(bar);
+      }
+    }
+    // Month view includes all-day events (prioritised so they cannot be hidden by timed items).
+    if(currentView==='month'){
+      const first=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1),start=startWeek(first);
+      [...root.querySelectorAll('.month-day')].forEach((cell,index)=>{
+        cell.querySelectorAll('.month-event').forEach(x=>x.remove());
+        const key=dateKey(addDays(start,index));
+        const items=evs.filter(e=>e.date===key).sort((a,b)=>Number(!!b.allDay)-Number(!!a.allDay));
+        items.slice(0,4).forEach(e=>cell.appendChild(makeChip(e,!!e.allDay)));
+        if(items.length>4){const more=document.createElement('small');more.textContent=`+${items.length-4} more`;more.style.color='var(--muted)';cell.appendChild(more);}
+      });
+    }
+  };
+
+  // Re-run the final renderer after branding is forced and keep it forced on later renders.
+  const oldRenderAllV33=renderAll;
+  renderAll=function(){oldRenderAllV33();forceBranding();};
+  forceBranding();
   renderAll();
 })();
 </script>
