@@ -503,8 +503,8 @@ renderCalendar=lwRender;
 renderAll=function(){viewSelect.value=currentView;originalRenderAll();viewSelect.value=currentView};
 // Extend the existing event editor without disturbing its original fields.
 const modal=$('eventModal').querySelector('.modal'),extra=document.createElement('div');extra.innerHTML=`<div class="field"><label>EVENT DETAILS / NOTES</label><input id="lwDetails" placeholder="Anything useful to remember…"></div><div class="field"><label>REMINDER & DESKTOP NOTIFICATION</label><div class="lw-reminder-fields"><label><input type="checkbox" id="lwReminder"> Remind me about this event</label><select id="lwLead"><option value="0">At event time</option><option value="5">5 minutes before</option><option value="10">10 minutes before</option><option value="15" selected>15 minutes before</option><option value="30">30 minutes before</option><option value="60">1 hour before</option><option value="1440">1 day before</option><option value="2880">2 days before</option><option value="10080">1 week before</option></select><small>Notifications need browser permission and the calendar open.</small></div></div><div class="field"><label><input type="checkbox" id="lwAllDay"> All-day event</label></div>`;modal.querySelector('.modal-actions').before(extra);
-openEvent=function(ev=null,date,time){originalOpenEvent(ev,date,time);$('lwDetails').value=ev?.details||'';$('lwReminder').checked=!!ev?.reminder;$('lwLead').value=String(ev?.reminderLead??15);$('lwAllDay').checked=!!ev?.allDay;$('eventTime').disabled=!!ev?.allDay;$('eventDuration').disabled=!!ev?.allDay;$('lwAllDay').onchange=()=>{$('eventTime').disabled=$('lwAllDay').checked;$('eventDuration').disabled=$('lwAllDay').checked}};
-saveEvent=function(){const id=editingId||Date.now();originalSaveEvent();const e=events.find(x=>x.id===id)||events[events.length-1];if(e){e.details=$('lwDetails').value.trim();e.reminder=$('lwReminder').checked;e.reminderLead=+$('lwLead').value;e.allDay=$('lwAllDay').checked;if(e.allDay){e.time='00:00';e.duration=24}e.reminded=false;persist();if(e.reminder)lwAskPermission()}renderAll()};
+openEvent=function(ev=null,date,time){oldOpen(ev,date,time);renderManagers();$('lwDetails').value=ev?.details||'';$('lwReminder').checked=!!ev?.reminder;$('lwLead').value=String(ev?.reminderLead??15);$('lwAllDay').checked=!!ev?.allDay;$('eventTime').disabled=!!ev?.allDay;$('eventDuration').disabled=!!ev?.allDay;$('lwAllDay').onchange=()=>{$('eventTime').disabled=$('lwAllDay').checked;$('eventDuration').disabled=$('lwAllDay').checked}};
+saveEvent=function(){const id=editingId||Date.now();oldSave();const e=events.find(x=>x.id===id)||events[events.length-1];if(e){const selectedTag=tags.find(t=>t.id===$('lwEventTag').value);e.category=selectedTag?selectedTag.name:'';e.details=$('lwDetails').value.trim();e.reminder=$('lwReminder').checked;e.reminderLead=+$('lwLead').value;e.allDay=$('lwAllDay').checked;if(e.allDay){e.time='00:00';e.duration=24}e.reminded=false;persist();if(e.reminder)lwAskPermission()}renderAll()};
 function lwAskPermission(){if('Notification'in window&&Notification.permission==='default')Notification.requestPermission()}
 function lwCheckReminders(){if(!('Notification'in window)||Notification.permission!=='granted')return;const now=Date.now();events.forEach(e=>{if(!e.reminder||e.reminded)return;const at=fromKey(e.date),[h,m]=e.time.split(':').map(Number);at.setHours(h,m,0,0);const fire=at.getTime()-(e.reminderLead||0)*60000;if(now>=fire&&now<at.getTime()+(e.duration||1)*3600000){new Notification(e.title,{body:`Coming up ${e.reminderLead?`in ${e.reminderLead} minutes`:'now'}${e.details?' · '+e.details:''}`,tag:'little-week-'+e.id});e.reminded=true;persist()}})}
 $('lwReminder').addEventListener('change',()=>{if($('lwReminder').checked)lwAskPermission()});setInterval(lwCheckReminders,15000);
@@ -1194,6 +1194,29 @@ label:has(>input[type="checkbox"]),label:has(input[type="checkbox"]){display:inl
   renderAll();
 })();
 </script>
+
+
+<style>
+/* v33.1 repair: keep event editor fields readable and prevent narrow checkbox labels. */
+#eventModal .modal #lwEventExtras { grid-column:1 / -1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 18px; align-items:start; }
+#eventModal .modal #lwEventExtras > .field { min-width:0; width:100%; }
+#eventModal .modal #lwEventExtras > .field:last-child { grid-column:1 / -1; }
+#eventModal .modal #lwEventExtras label { white-space:normal; }
+#eventModal .modal #lwEventExtras > .field:last-child > label { display:flex; flex-direction:row; align-items:center; justify-content:flex-start; gap:10px; width:auto; }
+#eventModal .modal #lwEventExtras > .field:last-child input[type="checkbox"] { width:16px; min-width:16px; margin:0; }
+#eventModal .modal #lwNewTagForm { display:grid; grid-template-columns:minmax(0,1fr) 54px auto; gap:8px; align-items:center; margin-top:8px; }
+#eventModal .modal #lwNewTagForm[hidden] { display:none !important; }
+#eventModal .modal #lwNewTagForm input[type="text"] { min-width:0; width:100%; }
+#eventModal .modal #lwNewTagForm input[type="color"] { width:54px; height:38px; padding:3px; }
+#eventModal .modal .lw-reminder-fields > label { display:flex; flex-direction:row; align-items:center; gap:9px; width:auto; }
+#eventModal .modal .lw-reminder-fields input[type="checkbox"] { width:16px; min-width:16px; }
+@media(max-width:650px) {
+  #eventModal .modal #lwEventExtras { grid-template-columns:1fr; }
+  #eventModal .modal #lwEventExtras > .field:last-child { grid-column:1; }
+  #eventModal .modal #lwNewTagForm { grid-template-columns:minmax(0,1fr) 48px; }
+  #eventModal .modal #lwNewTagForm button { grid-column:1 / -1; }
+}
+</style>
 
 </body>
 </html>
